@@ -46,6 +46,7 @@ public class CacheStorage {
     public CacheStorage() {
         log.info("CacheStorage constructor..");
         gameCache = new ConcurrentHashMap<String, GameData>();
+        timeoutCache = new ConcurrentHashMap<String, Boolean>();
     }
 
     public GameData getGameCache(String key) {
@@ -150,6 +151,7 @@ public class CacheStorage {
         gameData.setPlayers(players);
         gameData.setTurns(turns);
         gameData.setPreviousDiceValues(previousDiceValues);
+        gameData.setMoveTokenPositions(new String[]{});
     }
 
     private List<Token> extractTokens(Integer key, String color, String id) {

@@ -36,6 +36,8 @@ public class GameData {
 
     private String[] home;
 
+    private String[] moveTokenPositions;
+
     private Map<Integer, Integer[]> previousDiceValues;
 
 }

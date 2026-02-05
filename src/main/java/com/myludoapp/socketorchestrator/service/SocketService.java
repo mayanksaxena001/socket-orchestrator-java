@@ -2,15 +2,16 @@ package com.myludoapp.socketorchestrator.service;
 
 import com.corundumstudio.socketio.SocketIOClient;
 import com.myludoapp.socketorchestrator.dto.MessageDto;
-import com.myludoapp.socketorchestrator.model.EventType;
-import com.myludoapp.socketorchestrator.model.GameData;
-import com.myludoapp.socketorchestrator.model.MessageRequest;
+import com.myludoapp.socketorchestrator.model.*;
 import com.myludoapp.socketorchestrator.util.Util;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static com.myludoapp.socketorchestrator.model.MessageType.CLIENT;
 import static com.myludoapp.socketorchestrator.model.MessageType.SERVER;
@@ -25,21 +26,24 @@ public class SocketService {
 
     public void sendEventToOtherClients(EventType eventType, SocketIOClient senderClient, Object message, String room) {
         for (SocketIOClient client : senderClient.getNamespace().getRoomOperations(room).getClients()) {
-            if (!client.getSessionId().equals(senderClient.getSessionId())) {
-                client.sendEvent(String.valueOf(eventType),
-                        message);
-            }
+            client.sendEvent(String.valueOf(eventType),
+                    message);
+//            if (!client.getSessionId().equals(senderClient.getSessionId())) {
+//            }
         }
     }
 
-    public void saveInfoMessage(SocketIOClient senderClient, String message, String room) {
-        MessageDto storedMessage = MessageDto.builder()
+    public void saveInfoMessage(SocketIOClient senderClient, String message, String userId,String room) {
+        MessageDto saveMessage = MessageDto.builder()
                 .messageType(SERVER.toString())
                 .content(message)
-                .room(room)
+                .userId(userId)
+                .room(Integer.parseInt(room))
+//                .createdAt(new Date())
+//                .updatedAt(new Date())
                 .build();
-//        messageService.saveMessage(storedMessage)
-        sendEventToOtherClients(EventType.RECEIVED_MESSAGE, senderClient, Util.toMessage(storedMessage), room);
+//        MessageDto storedMessage = messageService.saveMessage(saveMessage);
+//        sendEventToOtherClients(EventType.RECEIVED_MESSAGE, senderClient, Util.toMessage(saveMessage), room+"");
     }
 
     public void onSendMessage(SocketIOClient senderClient, MessageRequest data) {
@@ -81,6 +85,11 @@ public class SocketService {
         log.info("dice value received...[{}]", data.getDiceValue());
         if (data.getGameId() != null) {
             GameData cacheData = cacheStorage.getGameCache(data.getGameId());
+            //reset
+            cacheData.setMove_token(false);
+            cacheData.setSelectedTokenId("");
+            cacheData.setMoveTokenPositions(new String[]{});
+
             ludoGameService = new LudoGameService(cacheData);
             ludoGameService.setDiceValue(data.getDiceValue());
             ludoGameService.setPreviousDiceValues(data.getDiceValue());
@@ -100,23 +109,27 @@ public class SocketService {
     public void timeOut(SocketIOClient senderClient, MessageRequest data) {
         log.info("time out..[{}]", data);
         if (data != null) {
-//            GameData cacheData = cacheStorage.getCache(data.getGameId());
-//            ludoGameService = new LudoGameService(cacheData);
-//            ludoGameService.timeOut();
-//            sendUpdatedData(ludoGameService, data, senderClient);
             Boolean timeoutCache = cacheStorage.getTimeoutCache(data.getUserId());
-            if(timeoutCache==null) {
+            if (timeoutCache == null) {
                 cacheStorage.updateTimeoutCache(data.getUserId(), true);
-                int randomNum = (int) (Math.floor(Math.random() * 6) + 1);
-                data.setDiceValue(randomNum);
-                diceRoll(senderClient,data);
-                cacheStorage.updateTimeoutCache(data.getUserId(), false);
-//                cacheStorage.clearTimeoutCache(data.getUserId());
-            } else if (timeoutCache) {
-                int randomNum = (int) (Math.floor(Math.random() * 6) + 1);
-                data.setDiceValue(randomNum);
-                diceRoll(senderClient,data);
-                cacheStorage.updateTimeoutCache(data.getUserId(), false);
+                GameData cacheData = cacheStorage.getGameCache(data.getGameId());
+                if (cacheData.isDiceCastComplete()) {
+                    //randomly select token
+                    String tokenId = "";
+                    Player player = cacheData.getPlayers().get(data.getUserId());
+                    List<Token> tokens = player.getHouse().getTokens().stream().filter(Token::isActive).collect(Collectors.toList());
+                    int randomNum = (int) (Math.floor(Math.random() * tokens.size()) + 1);
+
+                    data.setTokenId(tokens.get(randomNum-1).getId());
+                    selectedToken(senderClient,data);
+                } else {
+                    //randomly select dice value
+                    int randomNum = (int) (Math.floor(Math.random() * 6) + 1);
+                    data.setDiceValue(randomNum);
+                    diceRoll(senderClient, data);
+                }
+//                cacheStorage.updateTimeoutCache(data.getUserId(), false);
+                cacheStorage.clearTimeoutCache(data.getUserId());
             }
         }
     }
@@ -125,6 +138,7 @@ public class SocketService {
         log.info("selected token...[{}]", data);
         GameData cacheData = cacheStorage.getGameCache(data.getGameId());
         ludoGameService = new LudoGameService(cacheData);
+//        cacheData.setMove_token(true);
         //TODO ; updated position
         ludoGameService.setDiceCastComplete(false);
         boolean retainPos = ludoGameService.moveToken(data.getTokenId(), data.getUserId());
@@ -143,13 +157,15 @@ public class SocketService {
     }
 
     public void sendChatMessage(SocketIOClient senderClient, MessageRequest message) {
-        MessageDto storedMessage = MessageDto.builder()
+        MessageDto saveMessage = MessageDto.builder()
                 .messageType(CLIENT.toString())
                 .content(message.getContent())
-                .room(message.getRoom())
+                .room(Integer.parseInt(message.getRoom()))
                 .userId(message.getUserId())
+//                .createdAt(new Date())
+//                .updatedAt(new Date())
                 .build();
-//        MessageDto storedMessage = messageService.saveMessage(storedMessage);
+        MessageDto storedMessage = messageService.saveMessage(saveMessage);//save to db
         sendEventToOtherClients(EventType.CHAT_MESSAGE_RECEIVED, senderClient, Util.toMessage(storedMessage), message.getRoom());
     }
 

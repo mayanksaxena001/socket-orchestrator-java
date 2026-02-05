@@ -101,6 +101,12 @@ public class LudoGameService {
                     for (Token token : tokenList) {
                         if (playerToken.get().getId().equals(token.getId())) {
                             token.setPosition(route[position]);
+                            if(position>0){
+                                //set token positions to be moved
+                                String[] moveTokenPositions= moveTokenPositions(position,route,dice_value);
+                                this.gameData.setMoveTokenPositions(moveTokenPositions);
+                            }
+
                             if (token.getPosition().equals("home")) {
                                 //TODO : retain player turn
                                 String[] home = this.gameData.getPlayers().get(userId).getHouse().getHome();
@@ -132,29 +138,41 @@ public class LudoGameService {
                     this.finishGame();
                 }
                 //kill a token ,if any
-                if (!playerToken.get().getPosition().equals("base")) {
-                    List<Token> _tokens = tokens.get(playerToken.get().getPosition());
-                    if (_tokens != null && _tokens.size() > 0) {
-                        _tokens.forEach(token -> {
-                            if (!token.getPosition().equals("home") && !token.getHouse_id().equals(playerToken.get().getHouse_id())) {
-                                this.gameData.getPlayers().values().stream().flatMap(p -> p.getHouse().getTokens().stream()).collect(Collectors.toList()).forEach(t -> {
-                                    if (t.getId().equals(token.getId())) {
-                                        t.setPosition("base");
-                                        retainPos.set(true);
-                                    }
-                                });
-                                ;
-                            }
-                        });
+                if (!playerToken.get().getPosition().equalsIgnoreCase("base") && !playerToken.get().getPosition().equalsIgnoreCase("home")) {
+                    String position1 = playerToken.get().getPosition();
+                    String[] splitPosition = position1.split("-");
+                    if (Objects.nonNull(splitPosition[1])&& !splitPosition[1].equalsIgnoreCase("4") && !splitPosition[1].equalsIgnoreCase("17")) {
+                        List<Token> _tokens = tokens.get(playerToken.get().getPosition());
+                        if (_tokens != null && _tokens.size() > 0) {
+                            _tokens.forEach(token -> {
+                                if (!token.getPosition().equals("home") && !token.getHouse_id().equals(playerToken.get().getHouse_id())) {
+                                    this.gameData.getPlayers().values().stream().flatMap(p -> p.getHouse().getTokens().stream()).collect(Collectors.toList()).forEach(t -> {
+                                        if (t.getId().equals(token.getId())) {
+                                            t.setPosition("base");
+                                            retainPos.set(true);
+                                        }
+                                    });
+                                    ;
+                                }
+                            });
+                        }
                     }
                 }
 
             }
-            if (retainPos.get()) this.gameData.setMove_token(true);
+//            if (retainPos.get()) this.gameData.setMove_token(true);
             return retainPos.get();
         }
 
         return false;
+    }
+
+    private String[] moveTokenPositions(int position, String[] route, int dice_value) {
+        String[] positions=new String[dice_value];
+        for (int i = 0; i < dice_value; i++) {
+            positions[i]=route[position-dice_value-i];
+        }
+        return positions;
     }
 
     private void finishGame() {
@@ -178,10 +196,40 @@ public class LudoGameService {
         int player_turn = this.gameData.getPlayer_turn();
         if (dice_value != 6) {
             player_turn = player_turn + 1;
-            if (player_turn > this.gameData.getPlayer_count())
-                player_turn = 1; //rolling turns
+//            if (player_turn > this.gameData.getPlayer_count())
+//                player_turn = 1; //rolling turns
+
+            String[] home = this.gameData.getHome();
+            if(home.length!=0){
+                for(int i=player_turn;;){
+                    if (i > this.gameData.getPlayer_count()) i=1;
+                    String player = this.gameData.getTurns().get(i);
+                    //check if next player is home
+                    boolean isHome = isHome(home, player);
+                    if(isHome) {
+                        i++;
+                    }
+                    else {
+                        player_turn=i;
+                        break;
+                    }
+                }
+            }
         }
         this.gameData.setPlayer_turn(player_turn);
+    }
+
+    private static boolean isHome(String[] home, String player) {
+        if(Objects.isNull(player)) return  false;
+        boolean isHome=false;
+        if(home.length==0)  return false;
+        for(String s: home){
+            if(Objects.nonNull(s)&& s.equalsIgnoreCase(player)) {
+                isHome = true;
+                break;
+            }
+        }
+        return isHome;
     }
 
     public GameData getGameData() {
@@ -289,9 +337,9 @@ public class LudoGameService {
         return this.gameData.isHas_started();
     }
 
-    public void timeOut() {
-        int randomNum = (int) (Math.floor(Math.random() * 6) + 1);
-        this.gameData.setDice_value(randomNum);
-        this.setPlayerTurn();
-    }
+//    public void timeOut() {
+//        int randomNum = (int) (Math.floor(Math.random() * 6) + 1);
+//        this.gameData.setDice_value(randomNum);
+//        this.setPlayerTurn();
+//    }
 }

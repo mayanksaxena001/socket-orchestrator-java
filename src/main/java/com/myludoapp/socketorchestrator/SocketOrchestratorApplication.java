@@ -1,12 +1,7 @@
 package com.myludoapp.socketorchestrator;
 
-import com.myludoapp.socketorchestrator.socket.SocketServer;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 @SpringBootApplication
 public class SocketOrchestratorApplication {

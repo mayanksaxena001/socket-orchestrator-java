@@ -105,11 +105,12 @@ public class SocketModule {
 //            String userId = client.getHandshakeData().getSingleUrlParam("room");
             var params = client.getHandshakeData().getUrlParams();
             String userId = params.get("userId").stream().collect(Collectors.joining());
+            String room = params.get("room").stream().collect(Collectors.joining());
 //            String room = params.get("room").stream().collect(Collectors.joining());
             //TODO : validate client cred
 //            client.joinRoom(room);
             socketService.onConnected(client, String.format(Constants.WELCOME_MESSAGE, userId),userId);
-            log.info("Socket ID[{}] - userId [{}]  Connected to server", client.getSessionId().toString(), userId);
+            log.info("Socket ID[{}] - userId [{}] - room [{}]  Connected to server", client.getSessionId().toString(),userId,room);
         };
 
     }
@@ -119,9 +120,9 @@ public class SocketModule {
             var params = client.getHandshakeData().getUrlParams();
 //            String room = params.get("room").stream().collect(Collectors.joining());
             String userId = params.get("userId").stream().collect(Collectors.joining());
-
+            String room = params.get("room").stream().collect(Collectors.joining());
             //TODO : sedn to other clients
-            socketService.saveInfoMessage(client, String.format(Constants.DISCONNECT_MESSAGE, userId), userId);
+//            socketService.saveInfoMessage(client, String.format(Constants.DISCONNECT_MESSAGE, userId), userId,room);
             log.info("Socket ID[{}] - userId [{}]  disconnected from server", client.getSessionId().toString(), userId);
         };
     }

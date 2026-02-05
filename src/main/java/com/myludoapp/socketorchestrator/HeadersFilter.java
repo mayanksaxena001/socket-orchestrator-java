@@ -19,7 +19,7 @@ public class HeadersFilter implements Filter {
         if(servletResponse instanceof HttpServletResponse){
             HttpServletResponse response = (HttpServletResponse) servletResponse;
             // here add the headers
-            String whitelist = "http://localhost:3000, http://129.168.0.105:3000, http://172.18.5.3:3000";
+            String whitelist = "http://localhost:3000, http://129.168.0.105:3000, http://172.18.5.3:3000, http://192.168.1.4:3000";
             response.setHeader("Access-Control-Allow-Origin", whitelist);
             response.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
             response.setHeader("Access-Control-Allow-Credentials", "true");

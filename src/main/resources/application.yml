@@ -14,7 +14,7 @@ spring:
     ddl-auto: none
     default_schema: ludo_db
   datasource:
-    url: jdbc:mysql://0.0.0.0:3307/ludo_db?enabledTLSProtocols=TLSv1.2
+    url: jdbc:mysql://172.18.5.2:3306/ludo_db?enabledTLSProtocols=TLSv1.2
     username: demo
     password: demo
     driver-class-name: com.mysql.cj.jdbc.Driver

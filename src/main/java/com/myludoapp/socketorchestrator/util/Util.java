@@ -11,7 +11,7 @@ public class Util {
         return MessageRequest.builder()
                 .messageType(dto.getMessageType())
                 .content(dto.getContent())
-                .room(dto.getRoom())
+                .room(dto.getRoom()+"")
                 .userId(dto.getUserId())
                 .build();
     }
@@ -20,7 +20,7 @@ public class Util {
         return MessageDto.builder()
                 .messageType(message.getMessageType().toString())
                 .content(message.getContent())
-                .room(message.getRoom())
+                .room(Integer.parseInt(message.getRoom()))
                 .userId(message.getUserId())
                 .build();
     }
